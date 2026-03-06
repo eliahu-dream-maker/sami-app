@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>עדכון קילומטראז' - Sami Najami</title>
+  <style>
+    /* הגדרות בסיס */
+    * { box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+    
+    body { 
+      background: #f4f6f8; 
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      min-height: 100vh; 
+      margin: 0; 
+      padding: 15px; 
+      color: #333; 
+    }
+    
+    /* הכרטיס הלבן */
+    .card { 
+      background: white; 
+      width: 100%; 
+      max-width: 400px; 
+      border-radius: 20px; 
+      padding: 25px; 
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
+      text-align: center; 
+      overflow: hidden; /* מונע גלישה החוצה */
+    }
+    
+    /* לוגו */
+    .logo { max-width: 160px; height: auto; margin-bottom: 15px; }
+    
+    h1 { color: #1565C0; font-size: 22px; margin: 0 0 5px 0; font-weight: 800; }
+    .subtitle { color: #666; font-size: 14px; margin-bottom: 25px; }
+    
+    /* שדות קלט - התיקון כאן! */
+    .input-group { margin-bottom: 20px; text-align: right; width: 100%; }
+    
+    label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
+    
+    input { 
+      width: 100%; /* רוחב מלא */
+      max-width: 100%; /* לא לחרוג */
+      box-sizing: border-box; /* התיקון הקריטי: כולל את הריפוד בתוך הרוחב */
+      padding: 15px; 
+      font-size: 24px; 
+      border: 2px solid #e0e0e0; 
+      border-radius: 12px; 
+      text-align: center; 
+      font-weight: bold; 
+      letter-spacing: 1px; 
+      outline: none; 
+      background: #fafafa; 
+    }
+    
+    input:focus { border-color: #1565C0; background: #fff; }
+    
+    /* כפתור */
+    .submit-btn { 
+      background: #1565C0; 
+      color: white; 
+      border: none; 
+      padding: 16px; 
+      width: 100%; 
+      border-radius: 50px; 
+      font-size: 18px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      box-shadow: 0 4px 10px rgba(21, 101, 192, 0.3); 
+      transition: 0.2s; 
+    }
+    .submit-btn:active { transform: scale(0.98); }
+    .submit-btn:disabled { background: #b0bec5; cursor: wait; transform: none; }
+    
+    /* סטטוס */
+    .status { margin-top: 20px; padding: 15px; border-radius: 10px; display: none; font-weight: bold; }
+    .success { background: #E8F5E9; color: #2E7D32; border: 1px solid #C8E6C9; }
+    .error { background: #FFEBEE; color: #C62828; border: 1px solid #FFCDD2; }
+    
+    .driver-name { font-size: 20px; display: block; margin-top: 5px; font-weight: 900; }
+    .reset-btn { background: none; border: none; color: #777; text-decoration: underline; margin-top: 20px; cursor: pointer; font-size: 14px; padding: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <img src="https://lh3.googleusercontent.com/d/137M-iuXOFoNVhZo-_TSufu8NWxMKYy8Q" class="logo" alt="Sami Najami">
+    
+    <h1>עדכון קילומטראז'</h1>
+    <p class="subtitle">הזן את הנתונים ולחץ על עדכן</p>
+
+    <div id="formArea">
+      <div class="input-group">
+        <label>מספר רכב</label>
+        <input type="tel" id="plate" placeholder="12345678" maxlength="9">
+      </div>
+      <div class="input-group">
+        <label>ק"מ נוכחי</label>
+        <input type="tel" id="km" placeholder="000,000" oninput="formatKm(this)">
+      </div>
+      <button class="submit-btn" id="submitBtn" onclick="sendUpdate()">עדכן במערכת</button>
+    </div>
+
+    <div id="statusBox" class="status"></div>
+    <button class="reset-btn" id="resetBtn" style="display:none" onclick="location.reload()">עדכון נוסף</button>
+  </div>
+
+  <script>
+    const API_URL = 'https://script.google.com/macros/s/AKfycbwDcaKYaOmlVmT8vQraI9eFBmuZwoHGEezIuqbK1IUi49NAcF3-Cg0IinmXavL9Gz8NXg/exec';
+
+    window.onload = function() {
+      speak('ברוכים הבאים');
+    };
+
+    function sendUpdate() {
+      const plate = document.getElementById('plate').value.replace(/[^0-9]/g, '');
+      const km = document.getElementById('km').value.replace(/[^0-9]/g, '');
+
+      if (plate.length < 5 || km.length < 3) return alert('נא להזין נתונים תקינים');
+
+      const btn = document.getElementById('submitBtn');
+      const status = document.getElementById('statusBox');
+      
+      btn.disabled = true;
+      btn.innerText = 'מעדכן...';
+      status.style.display = 'none';
+
+      // שימוש ב-sendUpdateSmart (CORS / POST)
+      fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({ plate: plate, km: km })
+      })
+      .then(res => res.json())
+      .then(data => {
+          if(data.success) {
+              handleSuccess(data.driverName);
+          } else {
+              handleError(data.error);
+          }
+      })
+      .catch(e => {
+          console.log(e);
+          // אם יש שגיאת רשת אבל הנתונים נשלחו, לפעמים כדאי להראות הצלחה
+          // כרגע נציג שגיאה כדי להיות בטוחים
+          handleError('תקלה בתקשורת (בדוק חיבור)');
+      });
+    }
+
+    function handleSuccess(driverName) {
+        const status = document.getElementById('statusBox');
+        const btn = document.getElementById('submitBtn');
+        
+        status.className = 'status success';
+        status.innerHTML = 'העדכון נשמר בהצלחה!<br><span class="driver-name">' + driverName + '</span>';
+        status.style.display = 'block';
+        
+        document.getElementById('plate').disabled = true;
+        document.getElementById('km').disabled = true;
+        document.getElementById('submitBtn').style.display = 'none';
+        document.getElementById('resetBtn').style.display = 'inline-block';
+        
+        speak('תודה רבה ' + driverName + ', העדכון נשמר בהצלחה');
+    }
+
+    function handleError(msg) {
+        const status = document.getElementById('statusBox');
+        const btn = document.getElementById('submitBtn');
+        
+        btn.disabled = false;
+        btn.innerText = 'עדכן במערכת';
+        
+        status.className = 'status error';
+        status.innerText = msg;
+        status.style.display = 'block';
+        speak('שגיאה, ' + msg);
+    }
+
+    function formatKm(el) {
+      let val = el.value.replace(/[^0-9]/g, '');
+      if(val) el.value = parseInt(val).toLocaleString('en-US');
+    }
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = 'he-IL';
+        window.speechSynthesis.speak(msg);
+      }
+    }
+  </script>
+</body>
+</html>
+
